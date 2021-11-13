@@ -1,6 +1,6 @@
 @echo off
 if exist %1 (
-    scp %1 MI_IA1@hpc.usm.md:~/CURMANSCHII/%1
+    scp %1 MI_IA1@hpc.usm.md:~/TURCANU/%1
     goto end
 )
 

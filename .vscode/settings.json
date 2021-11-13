@@ -9,5 +9,8 @@
         "*.asset": "yaml",
         "*.dwlt": "yaml",
         "xutility": "cpp"
-    }
+    },
+    "dscanner.ignoredKeys": [
+        "dscanner.style.long_line"
+    ]
 }
