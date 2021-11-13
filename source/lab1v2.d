@@ -129,6 +129,8 @@ extern (C) void SearchMax(void* a, void* b, int* len, MPI_Datatype* dt)
     int[] output = (cast(int*) b)[0 .. length];
 
     output.Compare(input);
+
+    writeln(output);
 }
 
 int main()
