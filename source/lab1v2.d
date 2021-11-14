@@ -93,6 +93,29 @@ int[] CreateDataRow(int[] matrixRow, int rowId)
     return result;
 }
 
+int[] InvertBitmap(int[] bitmap, int rowLength)
+{
+    int[] result = new int[bitmap.length];
+
+    foreach (rowId; 0 .. rowLength)
+        foreach (colId; 0 .. rowLength)
+        {
+            int firstIndex = rowId * rowLength + colId;
+            int secondIndex = colId * rowLength + rowId;
+
+            int firstIntIndex = firstIndex / intBitLength;
+            int firstBitIndex = firstIndex % intBitLength;
+
+            int secondIntIndex = secondIndex / intBitLength;
+            int secondBitIndex = secondIndex % intBitLength;
+
+            if (bitmap[firstIntIndex] & (1 << firstBitIndex)) 
+                result[secondIntIndex] |= 1 << secondBitIndex;
+        }
+
+    return result;
+}
+
 void Compare(int[] destination, int[] source)
 {
     assert(source.length == destination.length);
@@ -129,8 +152,6 @@ extern (C) void SearchMax(void* a, void* b, int* len, MPI_Datatype* dt)
     int[] output = (cast(int*) b)[0 .. length];
 
     output.Compare(input);
-
-    writeln(output);
 }
 
 int main()
@@ -150,31 +171,24 @@ int main()
     MPI_Op operation;
     MPI_Op_create(&SearchMax, 1, &operation);
 
+    int[] Invert(int[] matrix)
+    {
+        int[] result = new int[matrix.length];
+
+        foreach (rowId; 0 .. rowLength)
+            foreach (colId; 0 .. rowLength)
+                result[rowId * rowLength + colId] = matrix[colId * rowLength + rowId];
+
+        return result;
+    }
+
     if (rank == root)
     {
         A = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
         B = [10, 11, 12, 13, 14, 15, 16, 17, 18];
+        B = Invert(B);
     }
-
-    int[] Invert(int[] matrix)
-    {
-        writeln(matrix.length);
-        writeln(rowLength);
-        int[] result = new int[matrix.length];
-
-        foreach (rowId; 0 .. rowLength)
-            foreach (colId; 0 .. rowLength)
-            {
-                writefln("%d %d", rowId, colId);
-                result[rowId * rowLength + colId] = matrix[colId * rowLength + rowId];
-            }
-
-        return result;
-    }
-
-    // MPI_Scatter(Invert(A).ptr, rowLength, MPI_INT, Acol.ptr, rowLength,
-    //         MPI_INT, root, MPI_COMM_WORLD);
 
     MPI_Scatter(A.ptr, rowLength, MPI_INT, Acol.ptr, rowLength, MPI_INT, root, MPI_COMM_WORLD);
     MPI_Scatter(B.ptr, rowLength, MPI_INT, Brow.ptr, rowLength, MPI_INT, root, MPI_COMM_WORLD);
@@ -182,18 +196,18 @@ int main()
     int[] Adata = Acol.CreateDataRow(rank);
     int[] Bdata = Brow.CreateDataRow(rank);
 
-    writeln("Adata:");
+    writefln("Adata %d:", rank);
     writeln(Adata);
     Bdata[rowLength + 1 .. $].Print();
 
-    writeln("Bdata:");
+    writefln("Bdata %d:", rank);
     writeln(Bdata);
     Bdata[rowLength + 1 .. $].Print();
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    int[] Aresult = new int[Acol.length];
-    int[] Bresult = new int[Brow.length];
+    int[] Aresult = new int[Adata.length];
+    int[] Bresult = new int[Bdata.length];
 
     MPI_Reduce(cast(void*) Adata, cast(void*) Aresult, cast(int) Adata.length,
             MPI_INT, operation, root, MPI_COMM_WORLD);
@@ -206,8 +220,23 @@ int main()
         writeln(Aresult);
         Aresult[rowLength + 1 .. $].Print();
 
+        Bresult[rowLength + 1 .. $] = Bresult[rowLength + 1 .. $].InvertBitmap(rowLength);
         writeln(Bresult);
         Bresult[rowLength + 1 .. $].Print();
+
+        Aresult[rowLength + 1 .. $] &= Bresult[rowLength + 1 .. $];
+
+        writeln("Final result:");
+        Aresult[rowLength + 1 .. $].Print();
+
+        foreach (index; 0 .. rowLength ^^ 2)
+        {
+            int intIndex = index / intBitLength;
+            int bitIndex = index % intBitLength;
+
+            if (Aresult[intIndex + rowLength + 1] & (1 << bitIndex))
+                writefln("(%d, %d)", index / rowLength, index % rowLength);
+        }
     }
 
     MPI_Finalize();
