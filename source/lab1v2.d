@@ -206,8 +206,13 @@ int main()
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    int[] Aresult = new int[Adata.length];
-    int[] Bresult = new int[Bdata.length];
+    int[] Aresult;
+    int[] Bresult;
+
+    if (rank == root) {
+        Aresult = new int[Adata.length];
+        Bresult = new int[Bdata.length];
+    }
 
     MPI_Reduce(cast(void*) Adata, cast(void*) Aresult, cast(int) Adata.length,
             MPI_INT, operation, root, MPI_COMM_WORLD);
