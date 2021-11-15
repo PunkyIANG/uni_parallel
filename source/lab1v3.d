@@ -208,6 +208,13 @@ int main()
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+    if (size == 2)
+    {
+        writeln("mate, did you really try to use an MPI program on ONE thread? idiot");
+        MPI_Finalize();
+        return 0;
+    }
+
     MPI_Op operation;
     MPI_Op_create(&SearchMax, 1, &operation);
 
@@ -239,9 +246,7 @@ int main()
         // B = Invert(B);
     }
 
-
     int maxRowCountPerThread = GetRowsPerThread(rowLength, size);
-
 
     if (rank == root && A.length < rowLength * maxRowCountPerThread * size)
     {
@@ -260,8 +265,6 @@ int main()
     int[] Adata = Acol.CreateDataRow(rowLength, rank);
     int[] Bdata = Brow.CreateDataRow(rowLength, rank);
 
-
-
     int[] Aresult;
     int[] Bresult;
 
@@ -275,7 +278,6 @@ int main()
             MPI_INT, operation, root, MPI_COMM_WORLD);
     MPI_Reduce(cast(void*) Bdata, cast(void*) Bresult, cast(int) Bdata.length,
             MPI_INT, operation, root, MPI_COMM_WORLD);
-
 
     int bitmapLength = GetBitmapLength(rowLength);
 
