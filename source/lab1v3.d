@@ -208,7 +208,7 @@ int main()
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    if (size == 2)
+    if (size == 1)
     {
         writeln("mate, did you really try to use an MPI program on ONE thread? idiot");
         MPI_Finalize();
